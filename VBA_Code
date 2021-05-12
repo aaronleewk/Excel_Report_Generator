@@ -1,0 +1,166 @@
+Option Explicit
+
+    Public lastrow As Integer
+
+    Public counter As Integer
+    Public OriginalSheet As String
+
+
+Sub MainSection()
+
+    Dim column As Integer
+    Dim SheetName As String
+
+    Application.ScreenUpdating = False
+
+    Call SLVLargerThan400k
+
+    lastrow = ActiveSheet.Cells(ActiveSheet.Rows.Count, "A").End(xlUp).Row
+
+    Call IsEmptyAvgValAvgRate
+
+    Call ValToSLVPreYr
+
+    Call ValPercentageChangeLastYr
+
+    column = "1"
+    SheetName = "AvgRate Or AvgVal Both Empty"
+    Call SortByColour(column, SheetName)
+
+    column = "23"
+    SheetName = "CompanyVal Larger MarkitSLV"
+    Call SortByColour(column, SheetName)
+
+    column = "24"
+    SheetName = "Percentage Change Too Large"
+    Call SortByColour(column, SheetName)
+
+    End Sub
+
+Sub SLVLargerThan400k()
+    
+    Dim RawSheet As String
+    RawSheet = ActiveSheet.Name
+    Range(Cells.Address).Select
+    Selection.AutoFilter Field:=15, Criteria1:=">400000"
+    ActiveSheet.Cells.Copy
+    Sheets.Add After:=ActiveSheet
+    Range("A1").Select
+    ActiveSheet.Paste
+    OriginalSheet = ActiveSheet.Name
+    Worksheets(RawSheet).Activate
+    Range(Cells.Address).Select
+    Selection.AutoFilter Field:=15, Criteria1:="<400000"
+    ActiveSheet.Name = "Raw Sheet"
+    Worksheets(OriginalSheet).Activate
+
+    End Sub
+
+Sub IsEmptyAvgValAvgRate()
+    
+    Dim AvgRateCurrentYear, AvgRatePrevYear, AvgValCurrentYear, AvgValPrevYear As Range
+    
+    counter = 2
+    Do Until counter = lastrow + 1
+    Set AvgValPrevYear = Range("I" & counter)
+    Set AvgValCurrentYear = Range("J" & counter)
+    Set AvgRatePrevYear = Range("K" & counter)
+    Set AvgRateCurrentYear = Range("L" & counter)
+    
+    If IsEmpty(AvgValPrevYear.Value) And IsEmpty(AvgValCurrentYear.Value) Then
+    Range("A" & counter).Interior.Color = RGB(153, 204, 255)
+    End If
+    
+    If IsEmpty(AvgRatePrevYear.Value) And IsEmpty(AvgRateCurrentYear.Value) Then
+    Range("A" & counter).Interior.Color = RGB(153, 204, 255)
+    End If
+
+    If AvgValPrevYear.Value = 0 And AvgValCurrentYear.Value = 0 Then
+    Range("A" & counter).Interior.Color = RGB(153, 204, 255)
+    End If
+    
+    If AvgRatePrevYear.Value = 0 And AvgRateCurrentYear.Value = 0 Then
+    Range("A" & counter).Interior.Color = RGB(153, 204, 255)
+    End If
+
+    counter = counter + 1
+    Loop
+    End Sub
+
+
+Sub ValToSLVPreYr()
+
+    Range("W1:W" & lastrow).Select
+    Selection.Formula = "=RC[-14]/RC[-8]"
+    Range("W1").Value = "Value to ShortLoanVal Prev Year"
+
+    counter = 2
+
+    Dim ValToSLV As Range
+
+    Do Until counter = lastrow + 1
+    Set ValToSLV = Range("W" & counter)
+
+    
+    If ValToSLV.Value > 1 Then
+    Range("W" & counter).Interior.Color = RGB(153, 204, 255)
+    End If
+    
+    counter = counter + 1
+    Loop
+    End Sub
+
+Sub ValPercentageChangeLastYr()
+
+    Range("X1:X" & lastrow).Select
+    Selection.Formula = "=ABS(RC[-14]-RC[-15])/RC[-15]"
+    Range("X1").Value = "Value 1 Year %Diff "
+
+    Dim ValueCompare As Range
+    
+    counter = 2
+    Do Until counter = lastrow + 1
+    Set ValueCompare = Range("X" & counter)
+
+    Do Until IsError(ValueCompare.Value) = False
+    If IsError(ValueCompare.Value) Then
+    counter = counter + 1
+    Set ValueCompare = Range("X" & counter)
+    End If
+    Loop
+
+    If ValueCompare.Value >= 4 Then
+    Range("X" & counter).Interior.Color = RGB(153, 204, 255)
+    End If
+    
+    counter = counter + 1
+    Loop
+    End Sub
+
+
+Sub SortByColour(ByVal column As Integer, ByVal SheetName As String)
+
+    Cells.Select
+
+    Selection.AutoFilter Field:=column, Criteria1:=RGB(153, 204, 255), Operator:=xlFilterCellColor
+
+
+    Selection.Copy
+    Sheets.Add After:=ActiveSheet
+    Range("A1").Select
+    ActiveSheet.Paste
+    ActiveSheet.Name = SheetName
+    Application.CutCopyMode = False
+
+
+    Worksheets(OriginalSheet).Activate
+    Range(Cells.Address).Select
+
+    Selection.AutoFilter
+
+
+    End Sub
+
+
+
+
